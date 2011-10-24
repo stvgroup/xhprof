@@ -26,3 +26,4 @@ extension/modules/
 extension/run-tests.php
 extension/xhprof.la
 extension/xhprof.lo
+xhprof_lib/utils/xhprof_runs.php
