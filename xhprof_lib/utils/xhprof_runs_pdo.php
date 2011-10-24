@@ -20,7 +20,7 @@
 // implementation of the interface (class XHProfRuns).
 //
 
-include_once XHPROF_LIB_ROOT . '/utils/ixhprofruns.php';
+include_once dirname(__FILE__) . '/ixhprofruns.php';
 
 /**
  * XHProfRuns_Default is the default implementation of the
@@ -41,23 +41,26 @@ class XHProfRuns_Default implements iXHProfRuns {
   public $run_details = null;
   protected $db;
 
-  protected $dbConfig = array(
+  protected $config = array(
 	  'dbtype' => 'mysql',
 	  'dbname' => 'xhprof',
 	  'dbuser' => 'xhprof',
 	  'dbpass' => 'xhprof',
+	  'namespace' => 'myapp',
+	  'servername' => 'myserver',
+	  'url' => null,
   );
 
-  public function __construct($dbConfig = array()) 
+  public function __construct($config = array()) 
   {
-	  $this->dbConfig = array_merge($this->dbConfig, $dbConfig);
+	  $this->config = array_merge($this->config, $config);
 	  $this->db();
   }
 
   protected function db()
   {
-	$connectionString = $this->dbConfig['dbtype'] . ':host=' . $this->dbConfig['dbhost'] . ';dbname=' . $this->dbConfig['dbname'];
-	$db = new PDO($connectionString, $this->dbConfig['dbuser'], $this->dbConfig['dbpass']);
+	$connectionString = $this->config['dbtype'] . ':host=' . $this->config['dbhost'] . ';dbname=' . $this->config['dbname'];
+	$db = new PDO($connectionString, $this->config['dbuser'], $this->config['dbpass']);
     if ($db === FALSE)
     {
       xhprof_error("Could not connect to db");
@@ -327,8 +330,6 @@ CREATE TABLE `details` (
   */
     public function save_run($xhprof_data, $type, $run_id = null, $xhprof_details = null) 
     {
-        global $_xhprof;
-
 		$sql = array();
         if ($run_id === null) {
           $run_id = $this->gen_run_id($type);
@@ -362,7 +363,7 @@ CREATE TABLE `details` (
         $sql['cookie'] = $this->db->quote(serialize($_COOKIE));
         
         //This code has not been tested
-        if ($_xhprof['savepost'])
+        if ($this->config['savepost'])
         {
         	$sql['post'] = $this->db->quote(serialize($_POST));    
         }else
@@ -388,7 +389,7 @@ CREATE TABLE `details` (
         $sql['servername'] = $this->db->quote($sname);
         $sql['type']  = (int) (isset($xhprof_details['type']) ? $xhprof_details['type'] : 0);
         $sql['timestamp'] = $this->db->quote($_SERVER['REQUEST_TIME']);
-		$sql['server_id'] = $this->db->quote($_xhprof['servername']);
+		$sql['server_id'] = $this->db->quote($this->config['servername']);
         $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : '';
         
         $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
@@ -399,8 +400,7 @@ CREATE TABLE `details` (
             return $run_id;
         }else
         {
-            global $_xhprof;
-            if ($_xhprof['display'] === true)
+            if ($this->config['display'] === true)
             {
                 echo "Failed to insert: $query <br>\n";
                 var_dump($rs->errorInfo());
