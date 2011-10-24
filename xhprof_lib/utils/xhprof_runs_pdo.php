@@ -209,10 +209,10 @@ CREATE TABLE `details` (
   
   public function getDistinct($data)
   {
-	$sql['column'] = $this->db->quote($data['column']);
-	$query = "SELECT DISTINCT({$sql['column']}) FROM `details`";
-	$rs = $this->db->query($query);
-	return $rs;
+	$column  = preg_replace('/[^a-zA-Z0-9-_]/', '', $data['column']);
+	$query = $this->db->prepare("SELECT DISTINCT({$column}) FROM `details`");
+	$rs = $query->execute(array($data['column']));
+	return $query;
   }
   
   public static function getNextAssoc($resultSet)
