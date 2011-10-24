@@ -39,28 +39,34 @@ class XHProfRuns_Default implements iXHProfRuns {
   private $dir = '';
   public $prefix = 't11_';
   public $run_details = null;
-  protected $linkID;
+  protected $db;
 
-  public function __construct($dir = null) 
+  protected $dbConfig = array(
+	  'dbtype' => 'mysql',
+	  'dbname' => 'xhprof',
+	  'dbuser' => 'xhprof',
+	  'dbpass' => 'xhprof',
+  );
+
+  public function __construct($dbConfig = array()) 
   {
-    $this->db();
+	  $this->dbConfig = array_merge($this->dbConfig, $dbConfig);
+	  $this->db();
   }
 
   protected function db()
   {
-	global $_xhprof;
-
-	
-    $linkid = mysqli_connect($_xhprof['dbhost'], $_xhprof['dbuser'], $_xhprof['dbpass']);
-    if ($linkid === FALSE)
+	$connectionString = $this->dbConfig['dbtype'] . ':host=' . $this->dbConfig['dbhost'] . ';dbname=' . $this->dbConfig['dbname'];
+	$db = new PDO($connectionString, $this->dbConfig['dbuser'], $this->dbConfig['dbpass']);
+    if ($db === FALSE)
     {
       xhprof_error("Could not connect to db");
       $run_desc = "could not connect to db";
       throw new Exception("Unable to connect to database");
       return false;
     }
-    mysqli_select_db($linkid, $_xhprof['dbname']);
-    $this->linkID = $linkid; 
+    $this->db = $db; 
+	$this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
   }
   /**
   * When setting the `id` column, consider the length of the prefix you're specifying in $this->prefix
