@@ -145,7 +145,7 @@ CREATE TABLE `details` (
           {
               $query .= $column;
           }
-          $value = mysqli_real_escape_string($this->linkID, $value);
+          $value = $this->db->quote($value);
           $query .= " `$column` = '$value' ";
       }
       
@@ -177,7 +177,7 @@ CREATE TABLE `details` (
           $query .= " LIMIT {$stats['limit']} ";
       }
       
-      $resultSet = mysqli_query($this->linkID, $query);
+      $resultSet = $this->db->query($query);
       return $resultSet;
   }
   
@@ -203,15 +203,15 @@ CREATE TABLE `details` (
   
   public function getDistinct($data)
   {
-	$sql['column'] = mysqli_real_escape_string($this->linkID, $data['column']);
+	$sql['column'] = $this->db->quote($data['column']);
 	$query = "SELECT DISTINCT(`{$sql['column']}`) FROM `details`";
-	$rs = mysqli_query($this->linkID, $query);
+	$rs = $this->db->query($query);
 	return $rs;
   }
   
   public static function getNextAssoc($resultSet)
   {
-    return mysqli_fetch_assoc($resultSet);
+	  return $resultSet->fetch();
   }
   
   /**
@@ -224,10 +224,10 @@ CREATE TABLE `details` (
   */
   public function get_run($run_id, $type, &$run_desc) 
   {
-    $run_id = mysqli_real_escape_string($this->linkID, $run_id);
+    $run_id = $this->db->quote($run_id);
     $query = "SELECT * FROM `details` WHERE `id` = '$run_id'";
-    $resultSet = mysqli_query($this->linkID, $query);
-    $data = mysqli_fetch_assoc($resultSet);
+    $resultSet = $this->db->query($query);
+    $data = $resultSet->fetch(); 
     
     //The Performance data is compressed lightly to avoid max row length
     $contents = unserialize(gzuncompress($data['perfdata']));
@@ -275,13 +275,13 @@ CREATE TABLE `details` (
   */
   public function getRunComparativeData($url, $c_url)
   {
-      $url = mysqli_real_escape_string($this->linkID, $url);
-      $c_url = mysqli_real_escape_string($this->linkID, $c_url);
+      $url = $this->db->quote($url);
+      $c_url = $this->db->quote($c_url);
       //Runs same URL
       //  count, avg/min/max for wt, cpu, pmu
       $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `url` = '$url'";
-      $rs = mysqli_query($this->linkID, $query);
-      $row = mysqli_fetch_assoc($rs);
+      $rs = $this->db->query($query);
+      $row = $rs->fetch();
       $row['url'] = $url;
       
       $row['95(`wt`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'wt', 'type' => 'url', 'url' => $url));
@@ -295,8 +295,8 @@ CREATE TABLE `details` (
       //Runs same c_url
       //  count, avg/min/max for wt, cpu, pmu
       $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `c_url` = '$c_url'";
-      $rs = mysqli_query($this->linkID, $query);
-      $row = mysqli_fetch_assoc($rs);
+      $rs = $this->db->query($query);
+      $row = $rs->fetch();
       $row['url'] = $c_url;
       $row['95(`wt`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'wt', 'type' => 'c_url', 'url' => $c_url));
       $row['95(`cpu`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'cpu', 'type' => 'c_url', 'url' => $c_url));
@@ -311,8 +311,8 @@ CREATE TABLE `details` (
   {
                   $limit = (int) ($details['count'] / 20);
                   $query = "SELECT `{$details['column']}` as `value` FROM `details` WHERE `{$details['type']}` = '{$details['url']}' ORDER BY `{$details['column']}` DESC LIMIT $limit, 1";
-                  $rs = mysqli_query($this->linkID, $query);
-                  $row = mysqli_fetch_assoc($rs);
+                  $rs = $this->db->query($query);
+                  $row = $rs->fetch();
                   return $row['value'];
   }
   
@@ -358,16 +358,16 @@ CREATE TABLE `details` (
 		
 		*/
 
-        $sql['get'] = mysqli_real_escape_string($this->linkID, serialize($_GET));
-        $sql['cookie'] = mysqli_real_escape_string($this->linkID, serialize($_COOKIE));
+        $sql['get'] = $this->db->quote(serialize($_GET));
+        $sql['cookie'] = $this->db->quote(serialize($_COOKIE));
         
         //This code has not been tested
         if ($_xhprof['savepost'])
         {
-        	$sql['post'] = mysqli_real_escape_string($this->linkID, serialize($_POST));    
+        	$sql['post'] = $this->db->quote(serialize($_POST));    
         }else
         {
-        	$sql['post'] = mysqli_real_escape_string($this->linkID, serialize(array("Skipped" => "Post data omitted by rule")));
+        	$sql['post'] = $this->db->quote(serialize(array("Skipped" => "Post data omitted by rule")));
         }
         
         
@@ -378,23 +378,23 @@ CREATE TABLE `details` (
 
 		// The value of 2 seems to be light enugh that we're not killing the server, but still gives us lots of breathing room on 
 		// full production code. 
-        $sql['data'] = mysqli_real_escape_string($this->linkID, gzcompress(serialize($xhprof_data), 2));
+        $sql['data'] = $this->db->quote(gzcompress(serialize($xhprof_data), 2));
         
 	$url   = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF'];
  	$sname = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '';
 	
-        $sql['url'] = mysqli_real_escape_string($this->linkID, $url);
-        $sql['c_url'] = mysqli_real_escape_string($this->linkID, _urlSimilartor($_SERVER['REQUEST_URI']));
-        $sql['servername'] = mysqli_real_escape_string($this->linkID, $sname);
+        $sql['url'] = $this->db->quote($url);
+        $sql['c_url'] = $this->db->quote(_urlSimilartor($_SERVER['REQUEST_URI']));
+        $sql['servername'] = $this->db->quote($sname);
         $sql['type']  = (int) (isset($xhprof_details['type']) ? $xhprof_details['type'] : 0);
-        $sql['timestamp'] = mysqli_real_escape_string($this->linkID, $_SERVER['REQUEST_TIME']);
-		$sql['server_id'] = mysqli_real_escape_string($this->linkID, $_xhprof['servername']);
+        $sql['timestamp'] = $this->db->quote($_SERVER['REQUEST_TIME']);
+		$sql['server_id'] = $this->db->quote($_xhprof['servername']);
         $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : '';
         
         $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
         
-        mysqli_query($this->linkID, $query);
-        if (mysqli_affected_rows($this->linkID) == 1)
+        $rs = $this->db->query($query);
+        if ($rs->numRows() == 1)
         {
             return $run_id;
         }else
@@ -403,8 +403,8 @@ CREATE TABLE `details` (
             if ($_xhprof['display'] === true)
             {
                 echo "Failed to insert: $query <br>\n";
-                var_dump(mysqli_error($this->linkID));
-                var_dump(mysqli_errno($this->linkID));
+                var_dump($rs->errorInfo());
+                var_dump($rs->errorCode());
             }
             return -1;
         }
