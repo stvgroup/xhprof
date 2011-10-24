@@ -70,6 +70,7 @@ class XHProfRuns_Default implements iXHProfRuns {
     }
     $this->db = $db; 
 	$this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+	$this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   }
   /**
   * When setting the `id` column, consider the length of the prefix you're specifying in $this->prefix
@@ -80,7 +81,7 @@ CREATE TABLE `details` (
   `url` varchar(255) default NULL,
   `c_url` varchar(255) default NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-  `server name` varchar(64) default NULL,
+  `server_name` varchar(64) default NULL,
   `perfdata` MEDIUMBLOB,
   `type` tinyint(4) default NULL,
   `cookie` BLOB,
@@ -149,7 +150,7 @@ CREATE TABLE `details` (
               $query .= $column;
           }
           $value = $this->db->quote($value);
-          $query .= " `$column` = '$value' ";
+          $query .= " `$column` = ? ";
       }
       
       if (isset($stats['where']))
@@ -228,7 +229,7 @@ CREATE TABLE `details` (
   public function get_run($run_id, $type, &$run_desc) 
   {
     $run_id = $this->db->quote($run_id);
-    $query = "SELECT * FROM `details` WHERE `id` = '$run_id'";
+    $query = "SELECT * FROM `details` WHERE `id` = $run_id";
     $resultSet = $this->db->query($query);
     $data = $resultSet->fetch(); 
     
@@ -363,7 +364,7 @@ CREATE TABLE `details` (
         $sql['cookie'] = $this->db->quote(serialize($_COOKIE));
         
         //This code has not been tested
-        if ($this->config['savepost'])
+        if (isset($this->config['savepost']) && $this->config['savepost'])
         {
         	$sql['post'] = $this->db->quote(serialize($_POST));    
         }else
@@ -390,12 +391,12 @@ CREATE TABLE `details` (
         $sql['type']  = (int) (isset($xhprof_details['type']) ? $xhprof_details['type'] : 0);
         $sql['timestamp'] = $this->db->quote($_SERVER['REQUEST_TIME']);
 		$sql['server_id'] = $this->db->quote($this->config['servername']);
-        $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : '';
+        $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : 'NULL';
         
-        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
+        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server_name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', {$sql['url']}, {$sql['c_url']}, FROM_UNIXTIME({$sql['timestamp']}), {$sql['servername']}, {$sql['data']}, {$sql['type']}, {$sql['cookie']}, {$sql['post']}, {$sql['get']}, {$sql['pmu']}, {$sql['wt']}, {$sql['cpu']}, {$sql['server_id']}, {$sql['aggregateCalls_include']})";
         
         $rs = $this->db->query($query);
-        if ($rs->numRows() == 1)
+        if ($rs && $rs->rowCount() == 1)
         {
             return $run_id;
         }else
