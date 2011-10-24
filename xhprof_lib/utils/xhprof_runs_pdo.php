@@ -129,6 +129,7 @@ CREATE TABLE `details` (
       
       $skippers = array("limit", "order by", "group by", "where", "select");
       $hasWhere = false;
+      $sqlParams = array();
       
       foreach($stats AS $column => $value)
       {
@@ -149,7 +150,7 @@ CREATE TABLE `details` (
           {
               $query .= $column;
           }
-          $value = $this->db->quote($value);
+          $sqlParams[] = $value;
           $query .= " `$column` = ? ";
       }
       
@@ -181,8 +182,9 @@ CREATE TABLE `details` (
           $query .= " LIMIT {$stats['limit']} ";
       }
       
-      $resultSet = $this->db->query($query);
-      return $resultSet;
+      $stmt = $this->db->prepare($query);
+      $rs = $stmt->execute($sqlParams);
+      return $stmt;
   }
   
   /**
@@ -208,7 +210,7 @@ CREATE TABLE `details` (
   public function getDistinct($data)
   {
 	$sql['column'] = $this->db->quote($data['column']);
-	$query = "SELECT DISTINCT(`{$sql['column']}`) FROM `details`";
+	$query = "SELECT DISTINCT({$sql['column']}) FROM `details`";
 	$rs = $this->db->query($query);
 	return $rs;
   }
@@ -279,13 +281,12 @@ CREATE TABLE `details` (
   */
   public function getRunComparativeData($url, $c_url)
   {
-      $url = $this->db->quote($url);
-      $c_url = $this->db->quote($c_url);
       //Runs same URL
       //  count, avg/min/max for wt, cpu, pmu
-      $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `url` = '$url'";
-      $rs = $this->db->query($query);
-      $row = $rs->fetch();
+      $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `url` = ?";
+      $stmt = $this->db->prepare($query);
+      $rs = $stmt->execute(array($url));
+      $row = $stmt->fetch();
       $row['url'] = $url;
       
       $row['95(`wt`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'wt', 'type' => 'url', 'url' => $url));
@@ -298,9 +299,10 @@ CREATE TABLE `details` (
       
       //Runs same c_url
       //  count, avg/min/max for wt, cpu, pmu
-      $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `c_url` = '$c_url'";
-      $rs = $this->db->query($query);
-      $row = $rs->fetch();
+      $query = "SELECT count(`id`), avg(`wt`), min(`wt`), max(`wt`),  avg(`cpu`), min(`cpu`), max(`cpu`), avg(`pmu`), min(`pmu`), max(`pmu`) FROM `details` WHERE `c_url` = ?";
+      $stmt = $this->db->prepare($query);
+      $rs = $stmt->execute(array($c_url));
+      $row = $stmt->fetch();
       $row['url'] = $c_url;
       $row['95(`wt`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'wt', 'type' => 'c_url', 'url' => $c_url));
       $row['95(`cpu`)'] = $this->calculatePercentile(array('count' => $row['count(`id`)'], 'column' => 'cpu', 'type' => 'c_url', 'url' => $c_url));
@@ -314,9 +316,10 @@ CREATE TABLE `details` (
   protected function calculatePercentile($details)
   {
                   $limit = (int) ($details['count'] / 20);
-                  $query = "SELECT `{$details['column']}` as `value` FROM `details` WHERE `{$details['type']}` = '{$details['url']}' ORDER BY `{$details['column']}` DESC LIMIT $limit, 1";
-                  $rs = $this->db->query($query);
-                  $row = $rs->fetch();
+                  $query = "SELECT ? as `value` FROM `details` WHERE ? = ? ORDER BY ? DESC LIMIT $limit, 1";
+		  $stmt = $this->db->prepare($query);
+                  $rs = $stmt->execute(array($details['column'], $details['type'], $details['url'], $details['column']));
+                  $row = $stmt->fetch();
                   return $row['value'];
   }
   
