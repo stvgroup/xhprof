@@ -71,7 +71,7 @@ CREATE TABLE `details` (
   `url` varchar(255) default NULL,
   `c_url` varchar(255) default NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-  `server name` varchar(64) default NULL,
+  `server_name` varchar(64) default NULL,
   `perfdata` MEDIUMBLOB,
   `type` tinyint(4) default NULL,
   `cookie` BLOB,
@@ -385,7 +385,7 @@ CREATE TABLE `details` (
 		$sql['server_id'] = mysqli_real_escape_string($this->linkID, $_xhprof['servername']);
         $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : '';
         
-        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
+        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server_name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
         
         mysqli_query($this->linkID, $query);
         if (mysqli_affected_rows($this->linkID) == 1)

@@ -69,7 +69,7 @@ CREATE TABLE dbo.details
    url nvarchar(255) NULL DEFAULT NULL, 
    c_url nvarchar(255) NULL DEFAULT NULL, 
    timestamp datetime NOT NULL DEFAULT getdate(), 
-   [server name] nvarchar(64) NULL DEFAULT NULL, 
+   [server_name] nvarchar(64) NULL DEFAULT NULL, 
    perfdata nvarchar(max) NULL, 
    type smallint NULL DEFAULT NULL, 
    cookie nvarchar(max) NULL, 
@@ -394,7 +394,7 @@ CREATE NONCLUSTERED INDEX dbo.timestamp
 		$sql['server_id'] = addslashes($_xhprof['servername']);
         $sql['aggregateCalls_include'] = getenv('xhprof_aggregateCalls_include') ? getenv('xhprof_aggregateCalls_include') : '';
         
-        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
+        $query = "INSERT INTO `details` (`id`, `url`, `c_url`, `timestamp`, `server_name`, `perfdata`, `type`, `cookie`, `post`, `get`, `pmu`, `wt`, `cpu`, `server_id`, `aggregateCalls_include`) VALUES('$run_id', '{$sql['url']}', '{$sql['c_url']}', FROM_UNIXTIME('{$sql['timestamp']}'), '{$sql['servername']}', '{$sql['data']}', '{$sql['type']}', '{$sql['cookie']}', '{$sql['post']}', '{$sql['get']}', '{$sql['pmu']}', '{$sql['wt']}', '{$sql['cpu']}', '{$sql['server_id']}', '{$sql['aggregateCalls_include']}')";
         
         mssql_query($query, $this->linkID);
         if (mssql_rows_affected($this->linkID) == 1)
